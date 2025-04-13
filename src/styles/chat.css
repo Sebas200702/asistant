@@ -1,0 +1,6 @@
+.chat {
+  display: grid;
+  grid-template-areas: 'messages' 'input';
+  grid-template-rows: 5fr 1fr;
+  gap: 1rem;
+}
