@@ -91,8 +91,7 @@ export const Input = () => {
   return (
     <form
       ref={formRef}
-      className={`flex h-min w-full max-w-3xl flex-col gap-2 items-center rounded-3xl border border-gray-400/40 bg-gray-100 px-4 py-2 shadow-md ${!messages.length ? 'absolute top-1/2 ' : '[grid-area:input] '}
-      `}
+      className={`flex h-min w-full max-w-3xl flex-col items-center gap-2 rounded-3xl border border-gray-400/40 bg-gray-100 px-4 py-2 shadow-md ${!messages.length ? 'absolute top-1/2' : '[grid-area:input]'} `}
       onSubmit={handleSubmit}
     >
       <textarea

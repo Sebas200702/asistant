@@ -1,6 +1,6 @@
+import { chat } from '@libs/gemini'
 import type { APIRoute } from 'astro'
 import type { Message } from '../../types'
-import { chat } from '@libs/gemini'
 
 export const POST: APIRoute = async ({ request }) => {
   const { message }: { message: Message } = await request.json()

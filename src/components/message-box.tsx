@@ -14,8 +14,8 @@ export const MesssageBox = ({
     <li
       className={`flex flex-col gap-1 ${
         role === 'user'
-          ? ' rounded-2xl self-end max-w-[500px] min-w-[200px] bg-gradient-to-br from-red-50 to-red-100 px-5 py-4 shadow-md ring-1 ring-red-200'
-          : ' text-gray-700 w-full'
+          ? 'max-w-[500px] min-w-[200px] self-end rounded-2xl bg-gradient-to-br from-red-50 to-red-100 px-5 py-4 shadow-md ring-1 ring-red-200'
+          : 'w-full text-gray-700'
       }`}
     >
       <header
@@ -36,7 +36,7 @@ export const MesssageBox = ({
         </span>
       </header>
 
-      <div className="whitespace-pre-wrap leading-relaxed tracking-wide">
+      <div className="leading-relaxed tracking-wide whitespace-pre-wrap">
         <MarkdownFormatter content={content} />
         {isLastMessage && isLoading && role === 'assistant' && (
           <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">

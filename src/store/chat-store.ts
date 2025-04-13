@@ -1,5 +1,5 @@
-import type { Message } from '../types'
 import { create } from 'zustand'
+import type { Message } from '../types'
 
 interface ChatStore {
   messages: Message[]

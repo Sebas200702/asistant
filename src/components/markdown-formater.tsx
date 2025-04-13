@@ -192,7 +192,7 @@ export const MarkdownFormatter = ({ content }: { content: string }) => {
     img({ node, inline, className, children, alt, ...props }: any) {
       return (
         <img
-          alt={alt || 'Image'}
+          alt={(alt as string) || 'Image'}
           className={className}
           style={{
             maxWidth: '70%',

@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 export const MessagesComponent = () => {
   const { messages } = useChatStore()
   useEffect(() => {
-    console.log(messages.map(message => message.content))
+    console.log(messages.map((message) => message.content))
   }, [messages])
 
   return (

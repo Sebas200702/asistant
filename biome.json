@@ -55,7 +55,6 @@
             "noPositiveTabindex": "error",
             "noRedundantAlt": "error",
             "noRedundantRoles": "error",
-            "useAltText": "error",
             "useAnchorContent": "error",
             "useAriaActivedescendantWithTabindex": "error",
             "useAriaPropsForRole": "error",
