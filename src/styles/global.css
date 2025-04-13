@@ -1,1 +1,15 @@
 @import 'tailwindcss';
+
+#app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-areas:
+    'sidebar header header'
+    'sidebar main main'
+    'sidebar main main';
+  grid-template-columns: 250px 6fr;
+  grid-template-rows: 60px 1fr;
+}
+.custom-scrollbar {
+  @apply overflow-x-hidden overflow-y-auto scroll-smooth [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-500 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:translate-x-1/2;
+}
