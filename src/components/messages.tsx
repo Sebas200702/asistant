@@ -60,29 +60,27 @@ export const MessagesComponent = () => {
   const [isNearBottom, setIsNearBottom] = useState(true)
   const [userHasScrolled, setUserHasScrolled] = useState(false)
 
-  // Check if user is near bottom of scroll
   const checkScrollPosition = () => {
     const container = scrollContainerRef.current
     if (!container) return
 
     const { scrollTop, scrollHeight, clientHeight } = container
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-    const threshold = 100 // pixels from bottom
+    const threshold = 100 
 
     setIsNearBottom(distanceFromBottom <= threshold)
   }
 
-  // Handle scroll events
+
   const handleScroll = () => {
     setUserHasScrolled(true)
     checkScrollPosition()
   }
 
-  // Auto-scroll to bottom when new messages are added, but only if user is near bottom
+
   useEffect(() => {
     if (messages.length === 0) return
 
-    // Always scroll for the first message or if user hasn't scrolled yet
     if (messages.length === 1 || !userHasScrolled || isNearBottom) {
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -90,7 +88,6 @@ export const MessagesComponent = () => {
     }
   }, [messages, isNearBottom, userHasScrolled])
 
-  // Reset scroll state when messages are cleared (new chat)
   useEffect(() => {
     if (messages.length === 0) {
       setUserHasScrolled(false)
