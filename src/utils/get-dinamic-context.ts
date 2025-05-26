@@ -3,7 +3,7 @@ import { calculateMatchScore } from '@utils/calculate-match-score'
 
 export const getDynamicContext = async (
   userInput: string,
-  topK: number = 3
+  topK: number = 5
 ) => {
   const tokens = userInput
     .toLowerCase()
