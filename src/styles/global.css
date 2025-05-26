@@ -1,8 +1,8 @@
 @import 'tailwindcss';
 
 #app {
-  min-height: 100vh;
-  height: 100vh;
+  min-height: 100dvh;
+  height: 100dvh;
   display: grid;
   grid-template-areas:
     'sidebar header header'
@@ -30,7 +30,7 @@
     top: 0;
     left: -100%;
     width: 280px;
-    height: 100vh;
+    height: 100dvh;
     z-index: 50;
     transition: left 0.3s ease-in-out;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
@@ -47,7 +47,7 @@
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     background: rgba(0, 0, 0, 0.5);
     z-index: 40;
     opacity: 0;
