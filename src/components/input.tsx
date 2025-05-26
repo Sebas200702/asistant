@@ -6,6 +6,7 @@ import { SendIcon } from '@icons/send'
 import { useChatStore, type Suggestion } from '@store/chat-store'
 import { useChatsStore } from '@store/chats-store'
 import type { Message } from '../types'
+import { navigate } from 'astro:transitions/client'
 
 const suggestions: Suggestion[] = [
   {
@@ -58,7 +59,7 @@ const suggestions: Suggestion[] = [
   }
 ]
 
-interface InputProps {}
+
 
 export const Input = () => {
   const [query, setQuery] = useState('')
@@ -85,27 +86,24 @@ export const Input = () => {
     e.preventDefault()
     setQuery('')
 
-    // Determinar qué mensaje enviar y si hay sugerencia activa
     let messageToSend = ''
     let currentSuggestionId: string | undefined = undefined
 
     if (activeSuggestion && !query.trim()) {
-      // Si hay una sugerencia activa y no hay texto en el input, usar el prompt de la sugerencia
       messageToSend = activeSuggestion.prompt
       currentSuggestionId = activeSuggestion.id
     } else if (query.trim()) {
-      // Si hay texto en el input, usarlo
+
       messageToSend = query.trim()
-      // Si hay sugerencia activa, también enviar su ID para contexto
+
       currentSuggestionId = activeSuggestion?.id
     } else {
-      // Si no hay nada, no enviar
+
       return
     }
 
     setIsLoading(true)
 
-    // Crear un nuevo chat si no hay uno activo
     let chatId = currentChatId
     if (!chatId) {
       const newChat = await createChat(messageToSend.substring(0, 50))
@@ -127,7 +125,7 @@ export const Input = () => {
 
     addMessage(userMessage)
 
-    // Guardar el mensaje del usuario en localStorage
+
     if (chatId) {
       saveMessageToChat(userMessage, chatId)
     }
@@ -170,7 +168,6 @@ export const Input = () => {
         editMessage(botMessage.id, reply)
       }
 
-      // Guardar la respuesta del bot en localStorage
       if (chatId && reply) {
         const finalBotMessage = { ...botMessage, content: reply }
         saveMessageToChat(finalBotMessage, chatId)
@@ -181,13 +178,17 @@ export const Input = () => {
       const errorMessage = 'Lo siento, ocurrió un error al procesar tu mensaje. Por favor, inténtalo de nuevo.'
       editMessage(botMessage.id, errorMessage)
 
-      // Guardar el mensaje de error también
+
       if (chatId) {
         const errorBotMessage = { ...botMessage, content: errorMessage }
         saveMessageToChat(errorBotMessage, chatId)
       }
     } finally {
       setIsLoading(false)
+
+      if (window.location.pathname === '/') {
+        navigate(`/?chat=${chatId}`)
+      }
     }
   }
 
@@ -200,7 +201,7 @@ export const Input = () => {
     setShowSuggestionDropdown(false)
   }
 
-  // Cerrar dropdown al hacer click fuera
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -243,7 +244,7 @@ export const Input = () => {
   return (
     <div className="bg-gradient-to-t from-gray-50 to-transparent pt-4 sm:pt-6 pb-3 sm:pb-4">
       <div className="max-w-4xl mx-auto px-3 sm:px-4">
-        {/* Mostrar sugerencia activa */}
+
         {activeSuggestion && (
           <div className="mb-3 bg-white rounded-xl border border-brand-red-200 p-3 shadow-sm">
             <div className="flex items-center justify-between">
@@ -280,7 +281,7 @@ export const Input = () => {
           onSubmit={handleSubmit}
         >
           <div className="flex items-end gap-2 sm:gap-3 p-3 sm:p-4">
-            {/* Botón adjuntar - oculto en móvil para ahorrar espacio */}
+
             <button
               type="button"
               className="hidden sm:flex flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200 mobile-touch-target"
@@ -289,7 +290,6 @@ export const Input = () => {
               <PlusIcon className="h-5 w-5" />
             </button>
 
-            {/* Botón selector de sugerencias */}
             <div className="relative" ref={dropdownRef}>
               <button
                 type="button"

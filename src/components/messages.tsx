@@ -1,6 +1,6 @@
 import { MesssageBox } from '@components/message-box'
 import { useChatStore, type Suggestion } from '@store/chat-store'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const suggestions: Suggestion[] = [
   {
@@ -56,11 +56,47 @@ const suggestions: Suggestion[] = [
 export const MessagesComponent = () => {
   const { messages, activeSuggestion, setActiveSuggestion } = useChatStore()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [isNearBottom, setIsNearBottom] = useState(true)
+  const [userHasScrolled, setUserHasScrolled] = useState(false)
 
-  // Auto-scroll to bottom when new messages are added
+  // Check if user is near bottom of scroll
+  const checkScrollPosition = () => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const { scrollTop, scrollHeight, clientHeight } = container
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight
+    const threshold = 100 // pixels from bottom
+
+    setIsNearBottom(distanceFromBottom <= threshold)
+  }
+
+  // Handle scroll events
+  const handleScroll = () => {
+    setUserHasScrolled(true)
+    checkScrollPosition()
+  }
+
+  // Auto-scroll to bottom when new messages are added, but only if user is near bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    if (messages.length === 0) return
+
+    // Always scroll for the first message or if user hasn't scrolled yet
+    if (messages.length === 1 || !userHasScrolled || isNearBottom) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }, 100)
+    }
+  }, [messages, isNearBottom, userHasScrolled])
+
+  // Reset scroll state when messages are cleared (new chat)
+  useEffect(() => {
+    if (messages.length === 0) {
+      setUserHasScrolled(false)
+      setIsNearBottom(true)
+    }
+  }, [messages.length])
 
   const handleSuggestionClick = (suggestion: Suggestion) => {
     setActiveSuggestion(suggestion)
@@ -68,7 +104,11 @@ export const MessagesComponent = () => {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto custom-scrollbar"
+        onScroll={handleScroll}
+      >
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] sm:min-h-[calc(100vh-180px)] text-center">
@@ -136,6 +176,24 @@ export const MessagesComponent = () => {
               </ul>
               {/* Invisible element to scroll to */}
               <div ref={messagesEndRef} className="h-4" />
+
+              {/* Show scroll to bottom button when user is not near bottom */}
+              {!isNearBottom && userHasScrolled && messages.length > 0 && (
+                <div className="fixed bottom-20 right-4 sm:right-6 z-10">
+                  <button
+                    onClick={() => {
+                      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+                      setIsNearBottom(true)
+                    }}
+                    className="bg-brand-red-500 hover:bg-brand-red-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 mobile-touch-target"
+                    title="Ir al final"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
