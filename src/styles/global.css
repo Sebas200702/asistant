@@ -2,6 +2,7 @@
 
 #app {
   min-height: 100vh;
+  height: 100vh;
   display: grid;
   grid-template-areas:
     'sidebar header header'
@@ -9,7 +10,211 @@
     'sidebar main main';
   grid-template-columns: 250px 6fr;
   grid-template-rows: 60px 1fr;
+  overflow: hidden;
 }
+
+/* Mobile Layout */
+@media (max-width: 768px) {
+  #app {
+    grid-template-areas:
+      'header header'
+      'main main'
+      'main main';
+    grid-template-columns: 1fr;
+    grid-template-rows: 60px 1fr;
+  }
+
+  /* Hide sidebar on mobile by default */
+  aside[data-grid-area="sidebar"] {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 280px;
+    height: 100vh;
+    z-index: 50;
+    transition: left 0.3s ease-in-out;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Show sidebar when open */
+  aside[data-grid-area="sidebar"].sidebar-open {
+    left: 0;
+  }
+
+  /* Mobile backdrop */
+  .mobile-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  }
+
+  .mobile-backdrop.backdrop-open {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
 .custom-scrollbar {
-  @apply overflow-x-hidden overflow-y-auto scroll-smooth [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar]:translate-x-1/2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-zinc-500 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.8);
+}
+
+/* Smooth animations for chat messages */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-enter {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Modal animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-in {
+  animation-duration: 0.2s;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+}
+
+.fade-in-0 {
+  animation-name: fadeIn;
+}
+
+.zoom-in-95 {
+  animation-name: zoomIn;
+}
+
+.duration-200 {
+  animation-duration: 0.2s;
+}
+
+/* Improved focus styles */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-brand-red-500 focus:ring-offset-2;
+}
+
+/* Gradient backgrounds for brand colors */
+.bg-brand-red-25 {
+  background-color: #fef7f7;
+}
+
+/* Hover and active states for buttons */
+.transform {
+  transition: transform 0.2s ease;
+}
+
+.hover\:scale-\[1\.02\]:hover {
+  transform: scale(1.02);
+}
+
+.active\:scale-\[0\.98\]:active {
+  transform: scale(0.98);
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+  /* Better touch targets */
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Improved spacing for mobile */
+  .mobile-spacing {
+    padding: 1rem;
+  }
+
+  /* Mobile-friendly input */
+  .mobile-input {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+
+  /* Mobile message bubbles */
+  .mobile-message {
+    max-width: 85%;
+  }
+
+  /* Mobile modal adjustments */
+  .mobile-modal {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+}
+
+@theme {
+  --color-Primary-950: #121212;
+  --color-Primary-900: #3d3d3d;
+  --color-Primary-800: #454545;
+  --color-Primary-700: #4f4f4f;
+  --color-Primary-600: #5d5d5d;
+  --color-Primary-500: #6d6d6d;
+  --color-Primary-400: #888888;
+  --color-Primary-300: #b0b0b0;
+  --color-Primary-200: #d1d1d1;
+  --color-Primary-100: #e7e7e7;
+  --color-Primary-50: #f6f6f6;
+  --color-Complementary: #1c1c1c;
+
+  --color-brand-red-50: #fef2f2;
+  --color-brand-red-100: #fee2e2;
+  --color-brand-red-200: #fecaca;
+  --color-brand-red-300: #fca5a5;
+  --color-brand-red-400: #f87171;
+  --color-brand-red-500: #e41e24;
+  --color-brand-red-600: #c71a1f;
+  --color-brand-red-700: #a8161a;
+  --color-brand-red-800: #8b1215;
+  --color-brand-red-900: #7f1d1d;
 }
