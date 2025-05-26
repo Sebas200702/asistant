@@ -176,7 +176,7 @@ export const MessagesComponent = () => {
 
               {/* Show scroll to bottom button when user is not near bottom */}
               {!isNearBottom && userHasScrolled && messages.length > 0 && (
-                <div className="fixed bottom-20 right-4 sm:right-6 z-10">
+                <div className="fixed md:bottom-20 right-4 bottom-40 z-10">
                   <button
                     onClick={() => {
                       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
