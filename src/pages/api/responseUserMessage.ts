@@ -79,7 +79,6 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const fullPrompt = `
-    Eres Amelia, la asistente virtual oficial de la Universidad de la Costa (CUC) en Barranquilla, Colombia.
 
     ${specificInstructions}
 
