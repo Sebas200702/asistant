@@ -25,8 +25,8 @@ import { ClientRouter } from 'astro:transitions'
       <slot />
     </div>
 
-    <script>
-      // Mobile menu functionality
+    <script is:inline>
+      const init = () =>{
       let isMobileMenuOpen = false
       const backdrop = document.getElementById('mobile-backdrop')
       const aside = document.querySelector('aside[data-grid-area="sidebar"]')
@@ -92,6 +92,8 @@ import { ClientRouter } from 'astro:transitions'
       ;(window as any).toggleMobileMenu = toggleMobileMenu
       ;(window as any).closeMobileMenu = closeMobileMenu
       ;(window as any).isMobileMenuOpen = () => isMobileMenuOpen
+}
+
     </script>
   </body>
 </html>
