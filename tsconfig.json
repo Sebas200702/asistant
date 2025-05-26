@@ -1,26 +1,60 @@
 {
-  "extends": "astro/tsconfigs/strict",
-  "compilerOptions": {
-    "types": ["./src/types.d.ts"],
-    "baseUrl": "src",
-    "paths": {
-      "@components/*": ["components/*"],
-      "@layouts/*": ["layouts/*"],
-      "@pages/*": ["pages/*"],
-      "@styles/*": ["styles/*"],
-      "@scripts/*": ["scripts/*"],
-      "@libs/*": ["libs/*"],
-      "@hooks/*": ["hooks/*"],
-      "@test_utils": ["test/utils"],
-      "@icons/*": ["components/icons/*"],
-      "@store/*": ["store/*"],
-      "@data/*": ["data/*"],
-      "@utils/*": ["utils/*"],
-      "types": ["src/types.d.ts"],
-      "@middlewares/*": ["middlewares/*"]
+    "extends": "astro/tsconfigs/strict",
+    "compilerOptions": {
+        "types": [
+            "./src/types.d.ts"
+        ],
+        "baseUrl": "src",
+        "paths": {
+            "@components/*": [
+                "components/*"
+            ],
+            "@layouts/*": [
+                "layouts/*"
+            ],
+            "@pages/*": [
+                "pages/*"
+            ],
+            "@styles/*": [
+                "styles/*"
+            ],
+            "@scripts/*": [
+                "scripts/*"
+            ],
+            "@libs/*": [
+                "libs/*"
+            ],
+            "@hooks/*": [
+                "hooks/*"
+            ],
+            "@test_utils": [
+                "test/utils"
+            ],
+            "@icons/*": [
+                "components/icons/*"
+            ],
+            "@store/*": [
+                "store/*"
+            ],
+            "@data/*": [
+                "data/*"
+            ],
+            "@utils/*": [
+                "utils/*"
+            ],
+            "types": [
+                "src/types.d.ts"
+            ],
+            "@middlewares/*": [
+                "middlewares/*"
+            ]
+        },
+        "jsx": "react-jsx",
+        "jsxImportSource": "react",
+        "module": "ESNext",
+        "target": "ES2022"
     },
-    "jsx": "react-jsx",
-    "jsxImportSource": "react"
-  },
-  "include": ["src"]
+    "include": [
+        "src"
+    ]
 }
