@@ -1,8 +1,8 @@
 ---
 import '@styles/global.css'
+import { ClientRouter } from 'astro:transitions'
 import { Aside } from '@components/aside'
 import { Header } from '@components/header'
-import { ClientRouter } from 'astro:transitions'
 ---
 
 <!doctype html>
@@ -17,83 +17,9 @@ import { ClientRouter } from 'astro:transitions'
   </head>
   <body>
     <div id="app" class="">
-      <!-- Mobile backdrop -->
-      <div id="mobile-backdrop" class="mobile-backdrop"></div>
-
       <Header client:load />
       <Aside client:load />
       <slot />
     </div>
-
-    <script is:inline>
-      const init = () =>{
-      let isMobileMenuOpen = false
-      const backdrop = document.getElementById('mobile-backdrop')
-      const aside = document.querySelector('aside[data-grid-area="sidebar"]')
-
-      function toggleMobileMenu() {
-        isMobileMenuOpen = !isMobileMenuOpen
-
-        if (isMobileMenuOpen) {
-          aside?.classList.add('sidebar-open')
-          backdrop?.classList.add('backdrop-open')
-          document.body.style.overflow = 'hidden' // Prevent background scroll
-        } else {
-          aside?.classList.remove('sidebar-open')
-          backdrop?.classList.remove('backdrop-open')
-          document.body.style.overflow = ''
-        }
-      }
-
-      function closeMobileMenu() {
-        if (isMobileMenuOpen) {
-          isMobileMenuOpen = false
-          aside?.classList.remove('sidebar-open')
-          backdrop?.classList.remove('backdrop-open')
-          document.body.style.overflow = ''
-        }
-      }
-
-      // Listen for header menu button clicks
-      document.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement
-
-        // Check if clicked element is the mobile menu button or its child
-        if (target.closest('[aria-label="Abrir menú"]')) {
-          e.preventDefault()
-          toggleMobileMenu()
-        }
-
-        // Check if clicked element is the close button or its child
-        if (target.closest('[aria-label="Cerrar menú"]')) {
-          e.preventDefault()
-          closeMobileMenu()
-        }
-      })
-
-      // Close menu when clicking backdrop
-      backdrop?.addEventListener('click', closeMobileMenu)
-
-      // Close menu on escape key
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && isMobileMenuOpen) {
-          closeMobileMenu()
-        }
-      })
-
-      // Close menu on window resize to desktop size
-      window.addEventListener('resize', () => {
-        if (window.innerWidth >= 768 && isMobileMenuOpen) {
-          closeMobileMenu()
-        }
-      })
-
-      // Make functions available globally for React components
-      ;(window as any).toggleMobileMenu = toggleMobileMenu
-      ;(window as any).closeMobileMenu = closeMobileMenu
-      ;(window as any).isMobileMenuOpen = () => isMobileMenuOpen
-}
-
-    </script>
   </body>
 </html>
