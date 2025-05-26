@@ -83,7 +83,7 @@ export const POST: APIRoute = async ({ request }) => {
     ${specificInstructions}
 
     USA TODA LA INFORMACIÓN A CONTINUACIÓN PARA RESPONDER LA PREGUNTA DEL USUARIO:
-    ${bestContexts.join('\n\n------\n')}
+    ${bestContexts.join(' ')}
 
     INSTRUCCIONES IMPORTANTES:
     - Responde de manera amigable y profesional
@@ -97,9 +97,6 @@ export const POST: APIRoute = async ({ request }) => {
   `
 
   const response = await chat.sendMessageStream(fullPrompt)
-
-  console.log('Suggestion ID:', suggestionId)
-  console.log('Best contexts:', bestContexts)
 
   if (
     !response ||
