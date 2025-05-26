@@ -1,13 +1,8 @@
-import { useEffect, useState } from 'react'
-import { useChatsStore } from '@store/chats-store'
-import { useChatStore } from '@store/chat-store'
-import type { ChatWithPreview } from '../types/chat'
 import { navigate } from 'astro:transitions/client'
-
-interface AsideProps {
-  isOpen?: boolean
-  onClose?: () => void
-}
+import { useChatStore } from '@store/chat-store'
+import { useChatsStore } from '@store/chats-store'
+import { useEffect, useRef, useState } from 'react'
+import type { ChatWithPreview } from '../types/chat'
 
 interface DeleteModalProps {
   isOpen: boolean
@@ -16,7 +11,12 @@ interface DeleteModalProps {
   onCancel: () => void
 }
 
-const DeleteModal = ({ isOpen, chatTitle, onConfirm, onCancel }: DeleteModalProps) => {
+const DeleteModal = ({
+  isOpen,
+  chatTitle,
+  onConfirm,
+  onCancel,
+}: DeleteModalProps) => {
   if (!isOpen) return null
 
   return (
@@ -25,20 +25,39 @@ const DeleteModal = ({ isOpen, chatTitle, onConfirm, onCancel }: DeleteModalProp
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onCancel}
+        onKeyDown={(e) => e.key === 'Enter' && onCancel()}
+        role="button"
+        tabIndex={0}
       />
 
       {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 animate-in fade-in-0 zoom-in-95 duration-200 mobile-modal">
         <div className="flex items-center gap-4 mb-4">
           <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            <svg
+              className="w-6 h-6 text-red-600"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
+                clipRule="evenodd"
+              />
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clipRule="evenodd"
+              />
             </svg>
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900">Eliminar conversación</h3>
-            <p className="text-sm text-gray-600 mt-1">Esta acción no se puede deshacer</p>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Eliminar conversación
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Esta acción no se puede deshacer
+            </p>
           </div>
         </div>
 
@@ -48,7 +67,8 @@ const DeleteModal = ({ isOpen, chatTitle, onConfirm, onCancel }: DeleteModalProp
             <span className="font-medium text-gray-900">"{chatTitle}"</span>?
           </p>
           <p className="text-sm text-gray-500 mt-2">
-            Se eliminarán todos los mensajes de esta conversación permanentemente.
+            Se eliminarán todos los mensajes de esta conversación
+            permanentemente.
           </p>
         </div>
 
@@ -71,7 +91,7 @@ const DeleteModal = ({ isOpen, chatTitle, onConfirm, onCancel }: DeleteModalProp
   )
 }
 
-export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
+export const Aside = () => {
   const {
     chats,
     currentChatId,
@@ -80,13 +100,14 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
     createChat,
     updateChatTitle,
     removeChatById,
-    setCurrentChatId
+    setCurrentChatId,
   } = useChatsStore()
 
   const { clearMessages } = useChatStore()
   const [editingChatId, setEditingChatId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean
     chatId: string | null
@@ -94,14 +115,77 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
   }>({
     isOpen: false,
     chatId: null,
-    chatTitle: ''
+    chatTitle: '',
   })
+
+  const asideRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     fetchChats().then(() => {
       setHasLoadedOnce(true)
     })
   }, [fetchChats])
+
+  // Mobile menu management
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen((prev) => {
+      const newState = !prev
+      if (newState) {
+        document.body.style.overflow = 'hidden'
+      } else {
+        document.body.style.overflow = ''
+      }
+      return newState
+    })
+  }
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false)
+    document.body.style.overflow = ''
+  }
+
+  // Global event listeners for mobile menu
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+
+      // Check if clicked element is the mobile menu button
+      if (target.closest('[aria-label="Abrir menú"]')) {
+        e.preventDefault()
+        toggleMobileMenu()
+      }
+    }
+
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobileMenuOpen) {
+        closeMobileMenu()
+      }
+    }
+
+    const handleResize = () => {
+      if (window.innerWidth >= 768 && isMobileMenuOpen) {
+        closeMobileMenu()
+      }
+    }
+
+    document.addEventListener('click', handleGlobalClick)
+    document.addEventListener('keydown', handleKeydown)
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      document.removeEventListener('click', handleGlobalClick)
+      document.removeEventListener('keydown', handleKeydown)
+      window.removeEventListener('resize', handleResize)
+      // Clean up body overflow on unmount
+      document.body.style.overflow = ''
+    }
+  }, [isMobileMenuOpen])
+
+  // Make mobile menu state available globally for header component
+  useEffect(() => {
+    ;(window as any).isMobileMenuOpen = isMobileMenuOpen
+    ;(window as any).toggleMobileMenu = toggleMobileMenu
+  }, [isMobileMenuOpen])
 
   const handleNewChat = async () => {
     const newChat = await createChat()
@@ -110,7 +194,7 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
       clearMessages()
       navigate(`/?chat=${newChat.id}`)
       // Close mobile menu after creating chat
-      if (onClose) onClose()
+      closeMobileMenu()
     }
   }
 
@@ -119,7 +203,7 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
     clearMessages()
     navigate(`/?chat=${chatId}`)
     // Close mobile menu after selecting chat
-    if (onClose) onClose()
+    closeMobileMenu()
   }
 
   const handleEditStart = (chat: ChatWithPreview) => {
@@ -144,7 +228,7 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
     setDeleteModal({
       isOpen: true,
       chatId: chat.id,
-      chatTitle: chat.title
+      chatTitle: chat.title,
     })
   }
 
@@ -183,19 +267,30 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
     } else {
       return date.toLocaleDateString('es-ES', {
         day: 'numeric',
-        month: 'short'
+        month: 'short',
       })
     }
   }
 
   // Solo mostrar loading si es la primera carga y no hay chats
-  const shouldShowLoading = isLoadingChats && !hasLoadedOnce && chats.length === 0
+  const shouldShowLoading =
+    isLoadingChats && !hasLoadedOnce && chats.length === 0
 
   return (
     <>
+      {/* Mobile backdrop */}
+      <div
+        className={`mobile-backdrop ${isMobileMenuOpen ? 'backdrop-open' : ''}`}
+        onClick={closeMobileMenu}
+        onKeyDown={(e) => e.key === 'Enter' && closeMobileMenu()}
+        role="button"
+        tabIndex={0}
+      />
+
       <aside
+        ref={asideRef}
         className={`w-full [grid-area:sidebar] bg-white border-r border-gray-200 shadow-sm md:relative md:translate-x-0 ${
-          isOpen ? 'sidebar-open' : ''
+          isMobileMenuOpen ? 'sidebar-open' : ''
         }`}
         data-grid-area="sidebar"
       >
@@ -204,12 +299,22 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
           <div className="p-4 border-b border-gray-100 mobile-spacing">
             {/* Mobile close button */}
             <button
-              onClick={onClose}
+              onClick={closeMobileMenu}
               className="md:hidden absolute top-2 right-2 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors mobile-touch-target z-10"
               aria-label="Cerrar menú"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
 
@@ -218,7 +323,11 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
               className="w-full flex items-center gap-3 px-4 mt-10 md:mt-0 py-3 bg-gradient-to-r from-brand-red-500 to-brand-red-600 hover:from-brand-red-600 hover:to-brand-red-700 text-white rounded-xl transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] mobile-touch-target"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                  clipRule="evenodd"
+                />
               </svg>
               <span className="font-semibold">Nueva conversación</span>
             </button>
@@ -238,11 +347,21 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
               <div className="p-6 text-center mobile-spacing">
                 <div className="mb-4">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                    <svg
+                      className="w-8 h-8 text-gray-400"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </div>
-                  <h3 className="text-base font-semibold text-gray-900 mb-1">No hay conversaciones</h3>
+                  <h3 className="text-base font-semibold text-gray-900 mb-1">
+                    No hay conversaciones
+                  </h3>
                   <p className="text-sm text-gray-500">
                     Inicia una nueva conversación con Amelia para comenzar
                   </p>
@@ -270,7 +389,6 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
                             if (e.key === 'Escape') handleEditCancel()
                           }}
                           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-red-500 focus:border-transparent mobile-input"
-                          autoFocus
                         />
                         <div className="flex gap-2 mt-3">
                           <button
@@ -294,9 +412,13 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
                           className="w-full p-4 text-left mobile-spacing mobile-touch-target"
                         >
                           <div className="flex items-start justify-between mb-2">
-                            <h3 className={`font-semibold text-sm truncate pr-3 leading-tight ${
-                              currentChatId === chat.id ? 'text-brand-red-700' : 'text-gray-900'
-                            }`}>
+                            <h3
+                              className={`font-semibold text-sm truncate pr-3 leading-tight ${
+                                currentChatId === chat.id
+                                  ? 'text-brand-red-700'
+                                  : 'text-gray-900'
+                              }`}
+                            >
                               {chat.title}
                             </h3>
                             <span className="text-xs text-gray-500 flex-shrink-0 font-medium">
@@ -306,9 +428,13 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
 
                           {chat.lastMessage && (
                             <div className="flex items-center gap-2 mb-2">
-                              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                chat.lastMessage.role === 'user' ? 'bg-brand-red-400' : 'bg-gray-400'
-                              }`} />
+                              <div
+                                className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                  chat.lastMessage.role === 'user'
+                                    ? 'bg-brand-red-400'
+                                    : 'bg-gray-400'
+                                }`}
+                              />
                               <p className="text-xs text-gray-600 truncate leading-relaxed">
                                 {formatLastMessage(chat.lastMessage.content)}
                               </p>
@@ -318,7 +444,8 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
                           {chat.messageCount > 0 && (
                             <div className="flex items-center justify-between">
                               <span className="text-xs text-gray-500 font-medium">
-                                {chat.messageCount} mensaje{chat.messageCount !== 1 ? 's' : ''}
+                                {chat.messageCount} mensaje
+                                {chat.messageCount !== 1 ? 's' : ''}
                               </span>
                               {currentChatId === chat.id && (
                                 <div className="w-2 h-2 bg-brand-red-500 rounded-full"></div>
@@ -338,7 +465,11 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
                               className="p-2 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors mobile-touch-target"
                               title="Editar título"
                             >
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <svg
+                                className="w-4 h-4"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                              >
                                 <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                               </svg>
                             </button>
@@ -350,9 +481,21 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
                               className="p-2 flex items-center justify-center text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors mobile-touch-target"
                               title="Eliminar conversación"
                             >
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clipRule="evenodd" />
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                              <svg
+                                className="w-4 h-4"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
+                                  clipRule="evenodd"
+                                />
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                  clipRule="evenodd"
+                                />
                               </svg>
                             </button>
                           </div>
@@ -370,13 +513,19 @@ export const Aside = ({ isOpen = false, onClose }: AsideProps) => {
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 mb-1">
                 <div className="w-6 h-6 bg-gradient-to-br from-brand-red-500 to-brand-red-600 rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clipRule="evenodd" />
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
-                <p className="text-xs font-semibold text-gray-700">
-                  Amelia
-                </p>
+                <p className="text-xs font-semibold text-gray-700">Amelia</p>
               </div>
               <p className="text-xs text-gray-500">
                 Asistente Virtual - Universidad de la Costa
