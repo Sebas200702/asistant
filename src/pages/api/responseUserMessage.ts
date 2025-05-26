@@ -14,7 +14,7 @@ export const POST: APIRoute = async ({ request }) => {
   const { content } = message
 
   const contextResults = await getDynamicContext(content)
-  const bestContexts = contextResults.slice(0, 3).map((c) => c.content)
+  const bestContexts = contextResults.map((c) => c.content)
 
   // Crear prompt específico según la sugerencia
   let specificInstructions = ''
