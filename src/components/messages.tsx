@@ -213,6 +213,8 @@ export const MessagesComponent = () => {
       if (streamingFrameRef.current) {
         cancelAnimationFrame(streamingFrameRef.current)
       }
+      // Reset del flag de streaming
+      isStreamingRef.current = false
     }
   }, [])
 
