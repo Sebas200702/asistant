@@ -114,12 +114,29 @@ export const MessagesComponent = () => {
     }
   }, [isLoading, messages, isNearBottom, userHasScrolled])
 
+  // Efecto para resetear estado cuando no hay mensajes
   useEffect(() => {
     if (messages.length === 0) {
       setUserHasScrolled(false)
       setIsNearBottom(true)
     }
   }, [messages.length])
+
+  // Efecto para detectar cuando termina el streaming y resetear estado si es necesario
+  useEffect(() => {
+    if (!isLoading && messages.length > 0) {
+      // Pequeño delay para permitir que el DOM se actualice completamente
+      const timer = setTimeout(() => {
+        checkScrollPosition()
+        // Si terminó el streaming y el usuario no había hecho scroll, mantener en el final
+        if (!userHasScrolled) {
+          setIsNearBottom(true)
+        }
+      }, 100)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [isLoading, checkScrollPosition, userHasScrolled])
 
   const handleSuggestionClick = (suggestion: Suggestion) => {
     setActiveSuggestion(suggestion)
