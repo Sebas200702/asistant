@@ -84,6 +84,7 @@ export const MessagesComponent = () => {
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const streamingFrameRef = useRef<number | null>(null)
   const lastMessageCountRef = useRef(0)
+  const isStreamingRef = useRef(false)
 
   // Función unificada de scroll con mejor performance
   const scrollToBottom = useCallback((smooth = true) => {
@@ -117,7 +118,7 @@ export const MessagesComponent = () => {
     // Calcular si estamos cerca del final
     const { scrollTop, scrollHeight, clientHeight } = container
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-    const nearBottom = distanceFromBottom <= 50 // Tolerancia reducida para mayor precisión
+    const nearBottom = distanceFromBottom <= 50
 
     setShouldAutoScroll(nearBottom)
 
@@ -143,15 +144,19 @@ export const MessagesComponent = () => {
     }
   }, [handleScroll])
 
-  // Auto-scroll para nuevos mensajes (corrige bug de race condition)
+  // Auto-scroll para nuevos mensajes (corrige bug de race condition y streaming)
   useEffect(() => {
     const currentMessageCount = messages.length
     const hasNewMessages = currentMessageCount > lastMessageCountRef.current
 
     if (hasNewMessages && shouldAutoScroll) {
+      // Para el primer mensaje o si no estamos en streaming, usar scroll smooth
+      // Para mensajes durante streaming, usar scroll instantáneo
+      const shouldUseSmooth = !isStreamingRef.current && !isUserScrolling
+      
       // Usar requestAnimationFrame para asegurar que el DOM esté actualizado
       const frameId = requestAnimationFrame(() => {
-        scrollToBottom(!isUserScrolling)
+        scrollToBottom(shouldUseSmooth)
       })
 
       // Cleanup del frame si el componente se desmonta
@@ -163,26 +168,28 @@ export const MessagesComponent = () => {
 
   // Manejo de streaming (corrige memory leak del setInterval y rebote al finalizar)
   useEffect(() => {
-    // Solo hacer streaming scroll si estamos cargando, hay mensajes, y debemos auto-scroll
-    if (!isLoading || messages.length === 0 || !shouldAutoScroll) {
-      // Si terminamos de hacer streaming, hacer un scroll final instantáneo para estabilizar
-      if (wasStreamingRef.current && !isLoading && messages.length > 0 && shouldAutoScroll) {
-        const finalFrameId = requestAnimationFrame(() => {
-          scrollToBottom(false) // Scroll instantáneo al terminar streaming
-        })
-        
-        // Resetear el flag después del scroll final
-        setTimeout(() => {
-          wasStreamingRef.current = false
-        }, 100)
-        
-        return () => cancelAnimationFrame(finalFrameId)
-      }
+    // Actualizar el estado de streaming
+    const wasStreaming = isStreamingRef.current
+    isStreamingRef.current = isLoading
+
+    // Si no hay mensajes, no hacer nada
+    if (messages.length === 0) {
       return
     }
 
-    // Actualizar flag de streaming cuando empezamos
-    wasStreamingRef.current = true
+    // Solo hacer streaming scroll si estamos cargando y debemos auto-scroll
+    if (!isLoading || !shouldAutoScroll) {
+      // Si acabamos de terminar streaming, hacer scroll final suave
+      if (wasStreaming && !isLoading && shouldAutoScroll) {
+        // Usar setTimeout para que se ejecute después de que se complete el mensaje
+        const timeoutId = setTimeout(() => {
+          scrollToBottom(true) // Scroll suave final
+        }, 50) // Pequeño delay para asegurar que el contenido esté renderizado
+        
+        return () => clearTimeout(timeoutId)
+      }
+      return
+    }
 
     const lastMessage = messages[messages.length - 1]
     if (lastMessage.role !== 'assistant') return
