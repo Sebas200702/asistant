@@ -1,6 +1,7 @@
+ 
 import { MesssageBox } from '@components/message-box'
 import { useChatStore, type Suggestion } from '@store/chat-store'
-import { useEffect, useRef, useState, useCallback, useLayoutEffect } from 'react'
+import { useEffect, useRef, useState, useLayoutEffect } from 'react'
 
 const suggestions: Suggestion[] = [
   {
@@ -71,41 +72,38 @@ const suggestions: Suggestion[] = [
 
 export const MessagesComponent = () => {
   const { messages, activeSuggestion, setActiveSuggestion, isLoading } = useChatStore()
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
   const [isNearBottom, setIsNearBottom] = useState(true)
 
+  // Función simple para scrollear al final
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior })
   }
 
-  // Observa si el final está visible
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0]
-        setIsNearBottom(entry.isIntersecting)
-      },
-      { threshold: 0.1 }
-    )
+  // Detectar si el usuario está cerca del final
+  const handleScroll = () => {
+    const container = scrollContainerRef.current
+    if (!container) return
 
-    if (messagesEndRef.current) {
-      observer.observe(messagesEndRef.current)
-    }
+    const { scrollTop, scrollHeight, clientHeight } = container
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight
+    const threshold = 100 // px
 
-    return () => {
-      if (messagesEndRef.current) observer.unobserve(messagesEndRef.current)
-    }
-  }, [])
+    setIsNearBottom(distanceFromBottom <= threshold)
+  }
 
-  // Auto scroll cuando llegan mensajes nuevos
+  // Auto scroll al agregar un mensaje nuevo
   useLayoutEffect(() => {
     if (messages.length === 0) return
-    if (isNearBottom || messages.length === 1) {
+
+    if (messages.length === 1 || isNearBottom) {
       scrollToBottom('smooth')
     }
   }, [messages, isNearBottom])
 
-  // Auto scroll en streaming (sin smooth)
+  // Auto scroll en streaming de mensajes del asistente
   useLayoutEffect(() => {
     if (isLoading && messages.length > 0) {
       const lastMessage = messages[messages.length - 1]
@@ -121,17 +119,19 @@ export const MessagesComponent = () => {
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto custom-scrollbar"
+        onScroll={handleScroll}
+      >
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] sm:min-h-[calc(100vh-180px)] text-center">
+              {/* Bloque de bienvenida y sugerencias */}
               <div className="mb-6 sm:mb-8 px-4">
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                  ¡Hola! Soy Amelia
-                </h2>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">¡Hola! Soy Amelia</h2>
                 <p className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-6 max-w-md mx-auto leading-relaxed">
-                  Tu asistente virtual de la Universidad de la Costa. Estoy aquí para ayudarte con
-                  información sobre nuestra universidad. ¿En qué puedo asistirte hoy?
+                  Tu asistente virtual de la Universidad de la Costa. Estoy aquí para ayudarte con información sobre nuestra universidad. ¿En qué puedo asistirte hoy?
                 </p>
               </div>
 
@@ -171,8 +171,7 @@ export const MessagesComponent = () => {
 
               <div className="mt-6 sm:mt-8 px-4">
                 <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto">
-                  Selecciona una categoría arriba o escribe tu pregunta directamente en el campo de
-                  texto
+                  Selecciona una categoría arriba o escribe tu pregunta directamente en el campo de texto
                 </p>
               </div>
             </div>
@@ -191,7 +190,7 @@ export const MessagesComponent = () => {
                 ))}
               </ul>
 
-              {/* Invisible marker */}
+              {/* Invisible marker para scrollear */}
               <div ref={messagesEndRef} className="h-4" />
 
               {/* Botón scroll down */}
