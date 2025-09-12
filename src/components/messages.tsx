@@ -161,10 +161,21 @@ export const MessagesComponent = () => {
     lastMessageCountRef.current = currentMessageCount
   }, [messages, shouldAutoScroll, isUserScrolling, scrollToBottom])
 
-  // Manejo de streaming (corrige memory leak del setInterval)
+  // Manejo de streaming (corrige memory leak del setInterval y rebote al finalizar)
   useEffect(() => {
+    // Actualizar flag de streaming
+    wasStreamingRef.current = isLoading
+
     // Solo hacer streaming scroll si estamos cargando, hay mensajes, y debemos auto-scroll
     if (!isLoading || messages.length === 0 || !shouldAutoScroll) {
+      // Si terminamos de hacer streaming, hacer un scroll final instantáneo para estabilizar
+      if (wasStreamingRef.current && !isLoading && messages.length > 0 && shouldAutoScroll) {
+        const finalFrameId = requestAnimationFrame(() => {
+          scrollToBottom(false) // Scroll instantáneo al terminar streaming
+        })
+        
+        return () => cancelAnimationFrame(finalFrameId)
+      }
       return
     }
 
