@@ -163,9 +163,6 @@ export const MessagesComponent = () => {
 
   // Manejo de streaming (corrige memory leak del setInterval y rebote al finalizar)
   useEffect(() => {
-    // Actualizar flag de streaming
-    wasStreamingRef.current = isLoading
-
     // Solo hacer streaming scroll si estamos cargando, hay mensajes, y debemos auto-scroll
     if (!isLoading || messages.length === 0 || !shouldAutoScroll) {
       // Si terminamos de hacer streaming, hacer un scroll final instantáneo para estabilizar
@@ -174,10 +171,18 @@ export const MessagesComponent = () => {
           scrollToBottom(false) // Scroll instantáneo al terminar streaming
         })
         
+        // Resetear el flag después del scroll final
+        setTimeout(() => {
+          wasStreamingRef.current = false
+        }, 100)
+        
         return () => cancelAnimationFrame(finalFrameId)
       }
       return
     }
+
+    // Actualizar flag de streaming cuando empezamos
+    wasStreamingRef.current = true
 
     const lastMessage = messages[messages.length - 1]
     if (lastMessage.role !== 'assistant') return
