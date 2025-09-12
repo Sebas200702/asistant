@@ -77,8 +77,16 @@ export const MessagesComponent = () => {
   const [isNearBottom, setIsNearBottom] = useState(true)
   const [scrollPending, setScrollPending] = useState(false)
 
-  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({ behavior })
+  // Scroll instantáneo sin salto durante streaming
+  const instantScrollToBottom = () => {
+    const container = scrollContainerRef.current
+    if (!container) return
+    container.scrollTop = container.scrollHeight
+  }
+
+  // Scroll smooth al final
+  const smoothScrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   const handleScroll = () => {
@@ -87,25 +95,23 @@ export const MessagesComponent = () => {
 
     const { scrollTop, scrollHeight, clientHeight } = container
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-    const threshold = 100
-    setIsNearBottom(distanceFromBottom <= threshold)
+    setIsNearBottom(distanceFromBottom <= 100)
   }
 
-  // Auto scroll cuando se agregan mensajes
+  // Scroll al agregar un nuevo mensaje
   useLayoutEffect(() => {
     if (messages.length === 0) return
 
     if (messages.length === 1 || isNearBottom) {
-      // Scroll pendiente, espera que el DOM se renderice
       setScrollPending(true)
     }
   }, [messages, isNearBottom])
 
-  // Scroll después de que el DOM ha actualizado completamente
+  // Ejecuta scroll después que DOM se haya actualizado
   useEffect(() => {
     if (scrollPending) {
       const raf = requestAnimationFrame(() => {
-        scrollToBottom('smooth')
+        smoothScrollToBottom()
         setScrollPending(false)
       })
       return () => cancelAnimationFrame(raf)
@@ -117,9 +123,9 @@ export const MessagesComponent = () => {
     if (isLoading && messages.length > 0) {
       const lastMessage = messages[messages.length - 1]
       if (lastMessage.role === 'assistant' && isNearBottom) {
-        // Scroll instantáneo mientras se genera el mensaje
-        const raf = requestAnimationFrame(() => scrollToBottom('auto'))
-        return () => cancelAnimationFrame(raf)
+        // Scroll instantáneo sin salto mientras se recibe el mensaje
+        const interval = setInterval(instantScrollToBottom, 50)
+        return () => clearInterval(interval)
       }
     }
   }, [isLoading, messages, isNearBottom])
@@ -201,14 +207,12 @@ export const MessagesComponent = () => {
                 ))}
               </ul>
 
-              {/* Invisible marker para scrollear */}
               <div ref={messagesEndRef} className="h-4" />
 
-              {/* Botón scroll down */}
               {!isNearBottom && messages.length > 0 && (
                 <div className="fixed md:bottom-20 right-4 bottom-40 z-10">
                   <button
-                    onClick={() => scrollToBottom('smooth')}
+                    onClick={smoothScrollToBottom}
                     className="bg-brand-red-500 hover:bg-brand-red-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 mobile-touch-target"
                     title="Ir al final"
                   >
