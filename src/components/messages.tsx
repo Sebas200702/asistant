@@ -1,6 +1,6 @@
 import { MesssageBox } from '@components/message-box'
 import { useChatStore, type Suggestion } from '@store/chat-store'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback, useLayoutEffect } from 'react'
 
 const suggestions: Suggestion[] = [
   {
@@ -54,13 +54,14 @@ const suggestions: Suggestion[] = [
 ]
 
 export const MessagesComponent = () => {
-  const { messages, activeSuggestion, setActiveSuggestion } = useChatStore()
+  const { messages, activeSuggestion, setActiveSuggestion, isLoading } = useChatStore()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [isNearBottom, setIsNearBottom] = useState(true)
   const [userHasScrolled, setUserHasScrolled] = useState(false)
 
-  const checkScrollPosition = () => {
+  // 1. Función checkScrollPosition actualizada con useCallback
+  const checkScrollPosition = useCallback(() => {
     const container = scrollContainerRef.current
     if (!container) return
 
@@ -69,24 +70,49 @@ export const MessagesComponent = () => {
     const threshold = 100 
 
     setIsNearBottom(distanceFromBottom <= threshold)
-  }
+  }, [])
 
-
-  const handleScroll = () => {
-    setUserHasScrolled(true)
+  // 4. Función handleScroll mejorada
+  const handleScroll = useCallback(() => {
     checkScrollPosition()
-  }
+    
+    // Solo marcar como scrolled si el usuario se aleja del final
+    const container = scrollContainerRef.current
+    if (container) {
+      const { scrollTop, scrollHeight, clientHeight } = container
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight
+      
+      if (distanceFromBottom > 100) {
+        setUserHasScrolled(true)
+      } else if (distanceFromBottom <= 10) {
+        // Reset si el usuario vuelve muy cerca del final
+        setUserHasScrolled(false)
+      }
+    }
+  }, [checkScrollPosition])
 
-
-  useEffect(() => {
+  // 2. useLayoutEffect principal reemplazando useEffect
+  useLayoutEffect(() => {
     if (messages.length === 0) return
 
-    if (messages.length === 1 || !userHasScrolled || isNearBottom) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      }, 100)
+    // Actualizar posición después de cada cambio de mensajes
+    checkScrollPosition()
+
+    // Auto scroll si se cumplen las condiciones
+    if (messages.length === 1 || (!userHasScrolled && isNearBottom)) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
-  }, [messages, isNearBottom, userHasScrolled])
+  }, [messages, checkScrollPosition, userHasScrolled, isNearBottom])
+
+  // 3. Nuevo useEffect para manejar streaming
+  useLayoutEffect(() => {
+    if (isLoading && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1]
+      if (lastMessage.role === 'assistant' && (isNearBottom || !userHasScrolled)) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      }
+    }
+  }, [isLoading, messages, isNearBottom, userHasScrolled])
 
   useEffect(() => {
     if (messages.length === 0) {
@@ -177,9 +203,11 @@ export const MessagesComponent = () => {
               {/* Show scroll to bottom button when user is not near bottom */}
               {!isNearBottom && userHasScrolled && messages.length > 0 && (
                 <div className="fixed md:bottom-20 right-4 bottom-40 z-10">
+                  {/* 5. Botón de scroll actualizado */}
                   <button
                     onClick={() => {
                       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+                      setUserHasScrolled(false) // Reset el estado
                       setIsNearBottom(true)
                     }}
                     className="bg-brand-red-500 hover:bg-brand-red-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 mobile-touch-target"
