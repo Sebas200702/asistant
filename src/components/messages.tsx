@@ -1,4 +1,3 @@
- 
 import { MesssageBox } from '@components/message-box'
 import { useChatStore, type Suggestion } from '@store/chat-store'
 import { useEffect, useRef, useState, useLayoutEffect } from 'react'
@@ -76,39 +75,51 @@ export const MessagesComponent = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const [isNearBottom, setIsNearBottom] = useState(true)
+  const [scrollPending, setScrollPending] = useState(false)
 
-  // Función simple para scrollear al final
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior })
   }
 
-  // Detectar si el usuario está cerca del final
   const handleScroll = () => {
     const container = scrollContainerRef.current
     if (!container) return
 
     const { scrollTop, scrollHeight, clientHeight } = container
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-    const threshold = 100 // px
-
+    const threshold = 100
     setIsNearBottom(distanceFromBottom <= threshold)
   }
 
-  // Auto scroll al agregar un mensaje nuevo
+  // Auto scroll cuando se agregan mensajes
   useLayoutEffect(() => {
     if (messages.length === 0) return
 
     if (messages.length === 1 || isNearBottom) {
-      scrollToBottom('smooth')
+      // Scroll pendiente, espera que el DOM se renderice
+      setScrollPending(true)
     }
   }, [messages, isNearBottom])
 
-  // Auto scroll en streaming de mensajes del asistente
-  useLayoutEffect(() => {
+  // Scroll después de que el DOM ha actualizado completamente
+  useEffect(() => {
+    if (scrollPending) {
+      const raf = requestAnimationFrame(() => {
+        scrollToBottom('smooth')
+        setScrollPending(false)
+      })
+      return () => cancelAnimationFrame(raf)
+    }
+  }, [scrollPending])
+
+  // Streaming del asistente
+  useEffect(() => {
     if (isLoading && messages.length > 0) {
       const lastMessage = messages[messages.length - 1]
       if (lastMessage.role === 'assistant' && isNearBottom) {
-        scrollToBottom('auto')
+        // Scroll instantáneo mientras se genera el mensaje
+        const raf = requestAnimationFrame(() => scrollToBottom('auto'))
+        return () => cancelAnimationFrame(raf)
       }
     }
   }, [isLoading, messages, isNearBottom])
