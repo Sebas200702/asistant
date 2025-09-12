@@ -1,6 +1,6 @@
 import { MesssageBox } from '@components/message-box'
 import { useChatStore, type Suggestion } from '@store/chat-store'
-import { useEffect, useRef, useState, useLayoutEffect } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 
 const suggestions: Suggestion[] = [
   {
@@ -71,64 +71,134 @@ const suggestions: Suggestion[] = [
 
 export const MessagesComponent = () => {
   const { messages, activeSuggestion, setActiveSuggestion, isLoading } = useChatStore()
+  
+  // Referencias
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  
+  // Estados simplificados
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true)
+  const [isUserScrolling, setIsUserScrolling] = useState(false)
+  
+  // Referencias para cleanup y control
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const streamingFrameRef = useRef<number | null>(null)
+  const lastMessageCountRef = useRef(0)
 
-  const [isNearBottom, setIsNearBottom] = useState(true)
-  const [scrollPending, setScrollPending] = useState(false)
-
-  // Scroll instantáneo sin salto durante streaming
-  const instantScrollToBottom = () => {
-    const container = scrollContainerRef.current
-    if (!container) return
-    container.scrollTop = container.scrollHeight
-  }
-
-  // Scroll smooth al final
-  const smoothScrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
-  const handleScroll = () => {
+  // Función unificada de scroll con mejor performance
+  const scrollToBottom = useCallback((smooth = true) => {
     const container = scrollContainerRef.current
     if (!container) return
 
+    try {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto'
+      })
+    } catch (error) {
+      // Fallback para navegadores que no soportan scrollTo con opciones
+      container.scrollTop = container.scrollHeight
+    }
+  }, [])
+
+  // Handler de scroll optimizado con debounce
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    // Marcar que el usuario está scrolling
+    setIsUserScrolling(true)
+
+    // Limpiar timeout anterior
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current)
+    }
+
+    // Calcular si estamos cerca del final
     const { scrollTop, scrollHeight, clientHeight } = container
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight
-    setIsNearBottom(distanceFromBottom <= 100)
-  }
+    const nearBottom = distanceFromBottom <= 50 // Tolerancia reducida para mayor precisión
 
-  // Scroll al agregar un nuevo mensaje
-  useLayoutEffect(() => {
-    if (messages.length === 0) return
+    setShouldAutoScroll(nearBottom)
 
-    if (messages.length === 1 || isNearBottom) {
-      setScrollPending(true)
-    }
-  }, [messages, isNearBottom])
+    // Resetear flag de scrolling del usuario después de un delay
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsUserScrolling(false)
+    }, 150)
+  }, [])
 
-  // Ejecuta scroll después que DOM se haya actualizado
+  // Setup del scroll listener con cleanup mejorado
   useEffect(() => {
-    if (scrollPending) {
-      const raf = requestAnimationFrame(() => {
-        smoothScrollToBottom()
-        setScrollPending(false)
-      })
-      return () => cancelAnimationFrame(raf)
-    }
-  }, [scrollPending])
+    const container = scrollContainerRef.current
+    if (!container) return
 
-  // Streaming del asistente
-  useEffect(() => {
-    if (isLoading && messages.length > 0) {
-      const lastMessage = messages[messages.length - 1]
-      if (lastMessage.role === 'assistant' && isNearBottom) {
-        // Scroll instantáneo sin salto mientras se recibe el mensaje
-        const interval = setInterval(instantScrollToBottom, 50)
-        return () => clearInterval(interval)
+    // Usar passive listener para mejor performance
+    container.addEventListener('scroll', handleScroll, { passive: true })
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll)
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
       }
     }
-  }, [isLoading, messages, isNearBottom])
+  }, [handleScroll])
+
+  // Auto-scroll para nuevos mensajes (corrige bug de race condition)
+  useEffect(() => {
+    const currentMessageCount = messages.length
+    const hasNewMessages = currentMessageCount > lastMessageCountRef.current
+
+    if (hasNewMessages && shouldAutoScroll) {
+      // Usar requestAnimationFrame para asegurar que el DOM esté actualizado
+      const frameId = requestAnimationFrame(() => {
+        scrollToBottom(!isUserScrolling)
+      })
+
+      // Cleanup del frame si el componente se desmonta
+      return () => cancelAnimationFrame(frameId)
+    }
+
+    lastMessageCountRef.current = currentMessageCount
+  }, [messages, shouldAutoScroll, isUserScrolling, scrollToBottom])
+
+  // Manejo de streaming (corrige memory leak del setInterval)
+  useEffect(() => {
+    // Solo hacer streaming scroll si estamos cargando, hay mensajes, y debemos auto-scroll
+    if (!isLoading || messages.length === 0 || !shouldAutoScroll) {
+      return
+    }
+
+    const lastMessage = messages[messages.length - 1]
+    if (lastMessage.role !== 'assistant') return
+
+    // Usar requestAnimationFrame recursivo en lugar de setInterval
+    const streamingScroll = () => {
+      scrollToBottom(false) // Sin smooth durante streaming para mejor UX
+      streamingFrameRef.current = requestAnimationFrame(streamingScroll)
+    }
+
+    streamingFrameRef.current = requestAnimationFrame(streamingScroll)
+
+    // CRÍTICO: Cleanup garantizado que corrige el memory leak
+    return () => {
+      if (streamingFrameRef.current) {
+        cancelAnimationFrame(streamingFrameRef.current)
+        streamingFrameRef.current = null
+      }
+    }
+  }, [isLoading, messages, shouldAutoScroll, scrollToBottom])
+
+  // Cleanup global al desmontar componente
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+      if (streamingFrameRef.current) {
+        cancelAnimationFrame(streamingFrameRef.current)
+      }
+    }
+  }, [])
 
   const handleSuggestionClick = (suggestion: Suggestion) => {
     setActiveSuggestion(suggestion)
@@ -208,28 +278,30 @@ export const MessagesComponent = () => {
               </ul>
 
               <div ref={messagesEndRef} className="h-4" />
-
-              {!isNearBottom && messages.length > 0 && (
-                <div className="fixed md:bottom-20 right-4 bottom-40 z-10">
-                  <button
-                    onClick={smoothScrollToBottom}
-                    className="bg-brand-red-500 hover:bg-brand-red-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 mobile-touch-target"
-                    title="Ir al final"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              )}
             </>
           )}
         </div>
       </div>
+
+      {/* Botón de scroll mejorado - Posicionado fuera del container de scroll */}
+      {!shouldAutoScroll && messages.length > 0 && (
+        <div className="absolute md:bottom-20 right-4 bottom-40 z-20">
+          <button
+            onClick={() => scrollToBottom(true)}
+            className="bg-brand-red-500 hover:bg-brand-red-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 mobile-touch-target focus:outline-none focus:ring-2 focus:ring-brand-red-300"
+            title="Ir al final"
+            aria-label="Ir al final de la conversación"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
   )
 }
