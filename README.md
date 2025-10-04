@@ -1,5 +1,4 @@
 
-```markdown
 # 🤖 Amelia - Asistente Virtual Universitario
 
 Asistente virtual impulsado por IA diseñado específicamente para la Universidad de la Costa. Amelia ayuda a estudiantes, profesores y futuros estudiantes a acceder a información sobre programas académicos, costos, admisiones, instalaciones del campus y otros servicios institucionales.
@@ -160,5 +159,5 @@ Para preguntas o soporte, contacta al equipo de desarrollo.
 ---
 
 Desarrollado con ❤️ para la Universidad de la Costa
-```
+
 
